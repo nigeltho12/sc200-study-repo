@@ -99,7 +99,7 @@ Every module has a corresponding lab entry in `/labs/` documenting what I built,
 <img src="https://img.shields.io/badge/-BTL1-1E3A8A?&style=for-the-badge" />
 <img src="https://img.shields.io/badge/-eJPT_v2-8B0000?&style=for-the-badge" />
 <img src="https://img.shields.io/badge/-ISC2_CC-000080?&style=for-the-badge" />
-<img src="https://img.shields.io/badge/-SC--200-In%20Progress-0078D4?&style=for-the-badge&logo=Microsoft&logoColor=white" />
+<img src="https://img.shields.io/badge/-SC200_In%20Progress-0078D4?&style=for-the-badge&logo=Microsoft&logoColor=white" />
 </div>
 
 ---
