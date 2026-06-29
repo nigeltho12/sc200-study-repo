@@ -1,0 +1,88 @@
+// ============================================================
+// SC-200 KQL Reference — Windows Security Events (SecurityEvent)
+// Table: SecurityEvent
+// ============================================================
+
+// ── AUTHENTICATION ──────────────────────────────────────────
+
+// Failed logon attempts (brute force detection)
+SecurityEvent
+| where EventID == 4625
+| summarize FailedAttempts = count() by Account, Computer, IpAddress
+| where FailedAttempts > 5
+| sort by FailedAttempts desc
+
+// Successful logon after multiple failures (spray success)
+let failed = SecurityEvent
+| where EventID == 4625
+| summarize count() by Account
+| where count_ > 5;
+SecurityEvent
+| where EventID == 4624
+| join kind=inner failed on Account
+| project TimeGenerated, Account, Computer, IpAddress, LogonType
+
+// Special privilege logon (admin account usage)
+SecurityEvent
+| where EventID == 4672
+| where SubjectUserName !endswith "$"
+| project TimeGenerated, SubjectUserName, Computer
+
+// ── ACCOUNT CHANGES ─────────────────────────────────────────
+
+// New user account created
+SecurityEvent
+| where EventID == 4720
+| project TimeGenerated, TargetUserName, SubjectUserName, Computer
+
+// User added to privileged group
+SecurityEvent
+| where EventID == 4732
+| where TargetUserName has_any ("Administrators", "Domain Admins", "Enterprise Admins")
+| project TimeGenerated, MemberName, TargetUserName, SubjectUserName
+
+// Account enabled
+SecurityEvent
+| where EventID == 4722
+| project TimeGenerated, TargetUserName, SubjectUserName, Computer
+
+// ── PERSISTENCE ─────────────────────────────────────────────
+
+// Scheduled task created
+SecurityEvent
+| where EventID == 4698
+| project TimeGenerated, Computer, SubjectUserName, TaskName, TaskContent
+
+// Service installed
+SecurityEvent
+| where EventID == 7045
+| project TimeGenerated, Computer, ServiceName, ServiceFileName, ServiceType
+
+// ── PROCESS EXECUTION ───────────────────────────────────────
+
+// PowerShell process creation (requires process auditing)
+SecurityEvent
+| where EventID == 4688
+| where NewProcessName has "powershell"
+| project TimeGenerated, Computer, SubjectUserName, NewProcessName, CommandLine
+
+// CMD spawning suspicious children
+SecurityEvent
+| where EventID == 4688
+| where ParentProcessName has "cmd.exe"
+| where NewProcessName has_any ("net.exe", "whoami.exe", "ipconfig.exe", "nltest.exe")
+| project TimeGenerated, Computer, SubjectUserName, NewProcessName, CommandLine
+
+// ── SUMMARY / HUNTING ───────────────────────────────────────
+
+// Top event IDs by volume (baseline / anomaly hunting)
+SecurityEvent
+| summarize count() by EventID
+| sort by count_ desc
+| take 20
+
+// Event volume by computer over time
+SecurityEvent
+| where TimeGenerated > ago(24h)
+| summarize count() by bin(TimeGenerated, 1h), Computer
+| render timechart
